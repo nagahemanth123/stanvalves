@@ -24,7 +24,9 @@ img { max-width: 100%; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
+<link rel="preload" as="image" href="pages/s/p1.webp" fetchpriority="high">
+<link rel="preload" as="image" href="pages/s/p2.webp">
 <style>
 /* Layout: phone first, one screen. A slim proof header, the A5 book filling a stone desk, one row of controls,
    then the page strip. Zoom opens the page full-screen to read it. */
@@ -194,13 +196,15 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-display); 
 	<div class="zoomscroll" id="zoomScroll"><div class="zoompages" id="zoomPages"></div></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script src="../page-flip.js"></script>
 <script>
 (() => {
 	const N = 8;
 	const RATIO = 148.5 / 210; // A5 page, width / height
 	const MIN_PAGE = 120;    // smallest page width: the book always opens as a two-page spread, phones included
-	const pages = Array.from({length: N}, (_, i) => `pages/p${i + 1}.jpg`);
+	const full = Array.from({length: N}, (_, i) => `pages/p${i + 1}.jpg`);   // sharp files, fetched only when a page is zoomed
+	const pages = Array.from({length: N}, (_, i) => `pages/s/p${i + 1}.webp`); // light files the book turns with
+	const tiny = Array.from({length: N}, (_, i) => `pages/t/p${i + 1}.webp`);   // thumbnails, also the instant placeholder
 	const names = ['Cover', 'Ball valves', 'Ball, butterfly and sanitary valves', 'Gate, globe and forged steel valves', 'Check valves and strainers', 'Process and isolation valves', 'Control, safety and automation', 'About Stanvalves and contact'];
 	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const touch = window.matchMedia('(hover: none)').matches;
@@ -210,17 +214,20 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-display); 
 	if (!touch) $('hint').textContent = 'Drag a page corner, click a page edge or use the arrow keys to turn. Zoom opens a page up close.';
 
 	// pages and thumbnails
+	const later = [];
 	pages.forEach((src, i) => {
 		const d = document.createElement('div');
 		d.className = 'page';
 		const img = new Image();
-		img.src = src; img.alt = `Catalogue page ${i + 1}: ${names[i]}`; img.draggable = false; img.decoding = 'async';
+		d.style.background = `#fff url(${tiny[i]}) center / cover no-repeat`;
+		if (i < 2) { img.fetchPriority = 'high'; img.src = src; } else later.push(() => { img.src = src; });
+		img.alt = `Catalogue page ${i + 1}: ${names[i]}`; img.draggable = false; img.decoding = 'async';
 		d.appendChild(img);
 		book.appendChild(d);
 		const t = document.createElement('button');
 		t.className = 'thumb'; t.type = 'button'; t.id = `thumb-${i + 1}`;
 		t.setAttribute('aria-label', `Go to page ${i + 1}: ${names[i]}`);
-		t.innerHTML = `<img src="${src}" alt=""><span>${String(i + 1).padStart(2, '0')}</span>`;
+		t.innerHTML = `<img src="${tiny[i]}" alt="" width="132" height="187"><span>${String(i + 1).padStart(2, '0')}</span>`;
 		t.addEventListener('click', () => { stop(); go(i); });
 		$('thumbs').appendChild(t);
 	});
@@ -248,6 +255,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-display); 
 	});
 	pf.loadFromHTML(book.querySelectorAll('.page'));
 	$('loading').hidden = true;
+	// the rest of the pages come in order once the first spread is up
+	const rest = () => later.splice(0).forEach((f) => f());
+	if (document.readyState === 'complete') rest(); else { window.addEventListener('load', rest, {once: true}); setTimeout(rest, 1500); }
 
 	const last = N - 1;
 	const idx = () => pf.getCurrentPageIndex();
@@ -337,7 +347,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-display); 
 	const openZoom = () => {
 		stop();
 		const on = shown(idx());
-		$('zoomPages').innerHTML = on.map((i) => `<img src="${pages[i]}" alt="Catalogue page ${i + 1}: ${names[i]}">`).join('');
+		$('zoomPages').innerHTML = on.map((i) => `<img src="${full[i]}" style="background:url(${pages[i]}) center / cover" alt="Catalogue page ${i + 1}: ${names[i]}">`).join('');
 		$('zoomWhere').textContent = label(idx());
 		$('zoom').hidden = false;
 		level = 2;
