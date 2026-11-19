@@ -201,7 +201,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-display); 
 	const RATIO = 148.5 / 210; // A5 page, width / height
 	const MIN_PAGE = 120;    // smallest page width: the book always opens as a two-page spread, phones included
 	const pages = Array.from({length: N}, (_, i) => `pages/p${i + 1}.jpg`);
-	const names = ['Cover', 'Ball valves, flanged', 'Ball valves, screwed, forged and actuated', 'Butterfly and sanitary valves', 'Gate, globe and forged steel valves', 'Check valves and strainers', 'Process and isolation valves', 'Control, safety and automation'];
+	const names = ['Cover', 'Ball valves', 'Ball, butterfly and sanitary valves', 'Gate, globe and forged steel valves', 'Check valves and strainers', 'Process and isolation valves', 'Control, safety and automation', 'About Stanvalves and contact'];
 	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const touch = window.matchMedia('(hover: none)').matches;
 
